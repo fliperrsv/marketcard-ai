@@ -11,6 +11,7 @@
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1",
     "framer-motion": "^12.42.0",
+    "gigachat": "^0.0.20",
     "next": "16.2.9",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -20,7 +21,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint-config-next": "16.2.9",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
