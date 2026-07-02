@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.theme-wb { background: linear-gradient(135deg, #4a0e4e 0%, #861657 50%, #4a0e4e 100%); }
+.theme-ozon { background: linear-gradient(135deg, #0c4a6e 0%, #0369a1 50%, #0c4a6e 100%); }
+.theme-light { background: #f8fafc; color: #1e293b; }
+
+.glow { background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); }
