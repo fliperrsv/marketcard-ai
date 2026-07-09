@@ -10,6 +10,7 @@
   "dependencies": {
     "@capacitor/cli": "^8.4.1",
     "@capacitor/core": "^8.4.1",
+    "axios": "^1.18.1",
     "framer-motion": "^12.42.0",
     "gigachat": "^0.0.20",
     "next": "16.2.9",
