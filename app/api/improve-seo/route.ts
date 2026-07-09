@@ -1,9 +1,8 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import axios from 'axios';
 import https from 'https';
 
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-
 const GIGACHAT_CREDENTIALS = 'MDE5ZTc1YTYtMTQ5ZC03ZDllLThmMmMtNDU5ZmE3NDMyMjE2OjhhYThlNDgzLTA3YWUtNGY4Yy05NDk0LTQ1YmIyNWM3ZTQ5Mg==';
 
 async function getGigaChatToken() {
@@ -23,72 +22,67 @@ async function getGigaChatToken() {
   return response.data.access_token;
 }
 
+function ensureStringArray(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(item => {
+    if (typeof item === 'string') return item;
+    if (typeof item === 'object' && item !== null) {
+      return item.name || item.value || JSON.stringify(item);
+    }
+    return String(item);
+  });
+}
+
 function extractJSON(text) {
-  // Находим первый { и последний }
   const start = text.indexOf('{');
   const end = text.lastIndexOf('}');
-  if (start === -1 || end === -1) {
-    throw new Error('JSON не найден');
-  }
-  const jsonStr = text.substring(start, end + 1);
-  return JSON.parse(jsonStr);
+  if (start === -1 || end === -1) throw new Error('JSON не найден');
+  return JSON.parse(text.substring(start, end + 1));
 }
 
 export async function POST(request: Request) {
   try {
-    const { data, analysis, tone } = await request.json();
+    const { data, analysis, tone, brand, audience, competitors } = await request.json();
     if (!data) {
       return NextResponse.json({ success: false, error: 'Нет данных' }, { status: 400 });
     }
 
     const accessToken = await getGigaChatToken();
 
-    // Формируем список замечаний и рекомендаций
     const weaknesses = analysis?.weaknesses || ['нет данных'];
     const recommendations = analysis?.recommendations || ['нет рекомендаций'];
+    let context = '';
+    if (brand) context += `Бренд: ${brand}\n`;
+    if (audience) context += `Целевая аудитория: ${audience}\n`;
+    if (competitors) context += `Конкуренты: ${competitors}\n`;
 
-    // Собираем текущие данные в читаемый вид
-    const currentData = `
-Заголовок: ${data.title || ''}
-Описание: ${data.description || ''}
-Преимущества: ${(data.advantages || []).join('\n')}
-Характеристики: ${(data.features || []).join('\n')}
-Ключевые слова: ${(data.keywords || []).join(', ')}
-`;
-
-    // Формируем промпт с чёткими инструкциями
     const prompt = `
-Ты — профессиональный SEO-копирайтер для маркетплейсов.
+Ты — SEO-копирайтер. Исправь карточку товара по списку замечаний.
 
-Твоя задача: **исправить карточку товара**, устранив все перечисленные недостатки.
+Контекст:
+${context}
+Текущая карточка:
+Заголовок: ${data.title}
+Описание: ${data.description}
+Преимущества: ${data.advantages?.join('\n')}
+Характеристики: ${data.features?.join('\n')}
+Ключевые слова: ${data.keywords?.join(', ')}
 
-**Текущая карточка:**
-${currentData}
-
-**Слабые стороны (их нужно обязательно исправить):**
+Слабые стороны (исправить каждую):
 ${weaknesses.map((w, i) => `${i+1}. ${w}`).join('\n')}
 
-**Рекомендации по улучшению (используй их как подсказки):**
+Рекомендации:
 ${recommendations.map((r, i) => `${i+1}. ${r}`).join('\n')}
 
-**Тональность:** ${tone || 'деловой'}
+Тональность: ${tone || 'деловой'}
 
-**Инструкция:**
-1. Перепиши карточку, сохранив ту же структуру JSON.
-2. Устрани **каждое** замечание из списка слабых сторон.
-3. Добавь конкретные цифры, факты, УТП.
-4. Сделай текст продающим, но читаемым.
-5. Не повторяй ключевые слова — используй синонимы.
-
-**Важно:** Верни ТОЛЬКО JSON без пояснений, без markdown, без кавычек-ёлочек. Начинай с { и заканчивай }.
-
-Формат JSON:
+Верни ТОЛЬКО JSON без пояснений:
 {
-  "title": "исправленный заголовок",
-  "description": "исправленное описание",
-  "advantages": ["преимущество 1", ...],
-  "features": ["характеристика 1", ...],
-  "keywords": ["ключевое слово 1", ...]
+  "title": "...",
+  "description": "...",
+  "advantages": ["..."],
+  "features": ["..."],
+  "keywords": ["..."]
 }`;
 
     const response = await axios({
@@ -97,7 +91,7 @@ ${recommendations.map((r, i) => `${i+1}. ${r}`).join('\n')}
       data: {
         model: 'GigaChat',
         messages: [
-          { role: 'system', content: 'Ты — помощник, который возвращает только JSON без пояснений.' },
+          { role: 'system', content: 'Ты — помощник, который возвращает только JSON.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.3,
@@ -112,31 +106,20 @@ ${recommendations.map((r, i) => `${i+1}. ${r}`).join('\n')}
     });
 
     const content = response.data.choices?.[0]?.message?.content || '{}';
-    console.log('📦 Ответ от GigaChat (первые 300 символов):', content.substring(0, 300));
-
-    // Пытаемся распарсить JSON
     let result;
     try {
-      // Сначала пробуем прямой парсинг
       result = JSON.parse(content);
     } catch (e) {
-      // Если не получилось — вырезаем JSON
       result = extractJSON(content);
     }
 
-    // Проверяем, что все поля есть
-    if (!result.title) result.title = data.title || 'Товар';
-    if (!result.description) result.description = data.description || 'Описание';
-    if (!result.advantages || !result.advantages.length) result.advantages = data.advantages || ['Качественный товар'];
-    if (!result.features || !result.features.length) result.features = data.features || ['Характеристика 1'];
-    if (!result.keywords || !result.keywords.length) result.keywords = data.keywords || ['ключевое слово'];
+    if (result.advantages) result.advantages = ensureStringArray(result.advantages);
+    if (result.features) result.features = ensureStringArray(result.features);
+    if (result.keywords) result.keywords = ensureStringArray(result.keywords);
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ Ошибка улучшения:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Ошибка' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

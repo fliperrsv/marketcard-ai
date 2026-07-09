@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import axios from 'axios';
 import https from 'https';
 
@@ -27,7 +27,6 @@ export async function POST(request: Request) {
   try {
     const { url, text } = await request.json();
 
-    // Если есть URL — пробуем получить контент (пока пропускаем)
     const contentToAnalyze = text || 'Текст не передан';
 
     if (!text && !url) {
@@ -58,11 +57,14 @@ ${contentToAnalyze.substring(0, 3000)}
 
 Оценка (score) от 0 до 100.`;
 
+    // Искусственная задержка, чтобы не флудить (опционально)
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     const response = await axios({
       method: 'post',
       url: 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions',
       data: {
-        model: 'GigaChat-2',
+        model: 'GigaChat',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5,
         max_tokens: 800
@@ -79,7 +81,6 @@ ${contentToAnalyze.substring(0, 3000)}
     const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     const result = JSON.parse(cleanContent);
 
-    // Заполняем поля по умолчанию, если чего-то нет
     return NextResponse.json({
       success: true,
       data: {
