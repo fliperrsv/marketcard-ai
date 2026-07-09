@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from 'next/server';
 import axios from 'axios';
 import https from 'https';
+import JSON5 from 'json5';
 
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 const GIGACHAT_CREDENTIALS = 'MDE5ZTc1YTYtMTQ5ZC03ZDllLThmMmMtNDU5ZmE3NDMyMjE2OjhhYThlNDgzLTA3YWUtNGY4Yy05NDk0LTQ1YmIyNWM3ZTQ5Mg==';
@@ -60,10 +61,11 @@ function cleanAndParseJSON(content) {
   if (start === -1 || end === -1) throw new Error('Массив JSON не найден');
   let jsonStr = cleaned.substring(start, end + 1);
   try {
-    return JSON.parse(jsonStr);
+    return JSON5.parse(jsonStr);
   } catch (e) {
+    // fallback: убираем лишние запятые и пробуем снова
     jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
-    return JSON.parse(jsonStr);
+    return JSON5.parse(jsonStr);
   }
 }
 
@@ -124,6 +126,8 @@ ${context}
     });
 
     const content = response.data.choices?.[0]?.message?.content || '[]';
+    console.log('📦 Ответ GigaChat (первые 500 символов):', content.substring(0, 500));
+
     let result;
     try {
       result = cleanAndParseJSON(content);
