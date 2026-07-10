@@ -48,7 +48,12 @@ function ensureStringArray(arr, defaultValues = []) {
   return arr.map(item => {
     if (typeof item === 'string' && item.trim()) return item.trim();
     if (typeof item === 'object' && item !== null) {
-      return item.name || item.value || JSON.stringify(item);
+      // Извлекаем текст из поля text, name, или берём первый попавшийся строковый ключ
+      const text = item.text || item.name || item.value || item.label || item.content || item.advantage || item.feature || item.keyword;
+      if (text && typeof text === 'string' && text.trim()) return text.trim();
+      // Если нет, пытаемся превратить объект в строку без фигурных скобок
+      const fallback = Object.values(item).find(v => typeof v === 'string' && v.trim());
+      return fallback ? fallback.trim() : JSON.stringify(item);
     }
     return String(item);
   }).filter(Boolean);
@@ -68,6 +73,20 @@ function cleanAndParseJSON(content) {
   }
 }
 
+function generateFallback(description, brand, tone) {
+  const words = description.trim().split(' ').slice(0, 6).join(' ');
+  const brandName = brand || 'Товар';
+  const title = `${brandName} — ${words || 'качественное решение'}`.substring(0, 70);
+  const desc = `Купите ${brandName} с быстрой доставкой. Надёжность, стиль и выгода в одном предложении. Оформите заказ и получите подарок!`.substring(0, 500);
+  return {
+    title,
+    description: desc,
+    advantages: ['Высокое качество', 'Доступная цена', 'Быстрая доставка', 'Надёжный производитель', 'Отличные отзывы', 'Гарантия качества'],
+    features: ['Материал: высококачественный пластик', 'Вес: 0.5 кг', 'Размеры: 20x10x5 см', 'Производство: Китай', 'Страна бренда: Россия'],
+    keywords: ['купить', 'цена', 'отзывы', 'доставка', 'качество', 'гарантия']
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const { description, tone, brand, audience, competitors, variants } = await request.json();
@@ -75,8 +94,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Введите описание товара' }, { status: 400 });
     }
 
-    const count = variants || 1; // по умолчанию 1
-
+    const count = variants || 1;
     const accessToken = await getGigaChatToken();
 
     let context = '';
@@ -134,15 +152,8 @@ ${context}
       result = cleanAndParseJSON(content);
     } catch (e) {
       console.error('❌ Ошибка парсинга JSON:', e.message);
-      result = [
-        {
-          title: `${brand || 'Товар'} — отличное качество по доступной цене`,
-          description: `Купите ${brand || 'товар'} с быстрой доставкой. Надёжность, стиль и выгода в одном предложении. Оформите заказ и получите подарок!`,
-          advantages: ['Высокое качество', 'Доступная цена', 'Быстрая доставка', 'Надёжный производитель', 'Отличные отзывы', 'Гарантия качества'],
-          features: ['Материал: высококачественный пластик', 'Вес: 0.5 кг', 'Размеры: 20x10x5 см', 'Производство: Китай', 'Страна бренда: Россия'],
-          keywords: ['купить', 'цена', 'отзывы', 'доставка', 'качество', 'гарантия']
-        }
-      ];
+      const fallbackCard = generateFallback(description, brand, tone);
+      result = [fallbackCard];
     }
 
     const normalized = Array.isArray(result) ? result : [result];
