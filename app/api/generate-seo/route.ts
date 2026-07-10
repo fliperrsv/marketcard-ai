@@ -63,7 +63,6 @@ function cleanAndParseJSON(content) {
   try {
     return JSON5.parse(jsonStr);
   } catch (e) {
-    // fallback: убираем лишние запятые и пробуем снова
     jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
     return JSON5.parse(jsonStr);
   }
@@ -71,10 +70,12 @@ function cleanAndParseJSON(content) {
 
 export async function POST(request: Request) {
   try {
-    const { description, tone, brand, audience, competitors } = await request.json();
+    const { description, tone, brand, audience, competitors, variants } = await request.json();
     if (!description || !description.trim()) {
       return NextResponse.json({ success: false, error: 'Введите описание товара' }, { status: 400 });
     }
+
+    const count = variants || 1; // по умолчанию 1
 
     const accessToken = await getGigaChatToken();
 
@@ -91,7 +92,7 @@ ${context}
 Описание товара: "${description.trim()}"
 Тональность: ${tone || 'деловой'}
 
-Создай 3 РАЗВЁРНУТЫХ варианта SEO-карточки для этого товара. Каждый вариант должен быть максимально детальным. Все поля должны быть заполнены! Никаких пустых строк или заглушек.
+Создай ${count} РАЗВЁРНУТЫХ варианта SEO-карточки для этого товара. Каждый вариант должен быть максимально детальным. Все поля должны быть заполнены! Никаких пустых строк или заглушек.
 
 Требования к КАЖДОМУ варианту:
 1. Заголовок (50-70 символов) — уникальное торговое предложение + 2-3 ключевых слова. Должен быть на русском языке.
@@ -102,7 +103,7 @@ ${context}
 
 ВАЖНО: Весь ответ должен быть на русском языке! Никаких английских слов, кроме брендов, если они указаны в описании.
 
-Верни ТОЛЬКО JSON-массив из 3 объектов. Используй английские названия ключей: title, description, advantages, features, keywords. Не добавляй ничего кроме JSON.
+Верни ТОЛЬКО JSON-массив из ${count} объектов. Используй английские названия ключей: title, description, advantages, features, keywords. Не добавляй ничего кроме JSON.
 `;
 
     const response = await axios({
@@ -145,7 +146,7 @@ ${context}
     }
 
     const normalized = Array.isArray(result) ? result : [result];
-    const filledResult = normalized.map(card => {
+    const filledResult = normalized.slice(0, count).map(card => {
       const norm = normalizeKeys(card);
       return {
         title: norm.title?.trim() || `${brand || 'Товар'} — надёжный выбор`,
