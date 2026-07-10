@@ -345,6 +345,7 @@ export default function Home() {
         <div style={{ marginTop: "2rem" }}>
           <h2 style={{ textAlign: "center", fontSize: "2rem", marginBottom: "1rem" }}>Выберите свой тариф</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "2rem", maxWidth: "900px", margin: "0 auto" }}>
+            {/* Free */}
             <div className="card" style={{ textAlign: "center" }}>
               <h3 style={{ fontSize: "1.5rem" }}>Free</h3>
               <p style={{ fontSize: "2rem", fontWeight: 700 }}>0 ₽</p>
@@ -357,9 +358,11 @@ export default function Home() {
                 <li>❌ Экспорт PDF/CSV</li>
                 <li>❌ История генераций</li>
               </ul>
+              <p style={{ fontSize: "0.8rem", opacity: 0.6, marginTop: "0.5rem" }}>GigaChat даёт ограниченное количество бесплатных токенов, поэтому бесплатный тариф имеет лимит.</p>
               <button style={{ width: "100%", padding: "1rem", background: "#ccc", border: "none", borderRadius: "12px", color: "#666", fontSize: "1.1rem", cursor: "default" }}>Текущий тариф</button>
             </div>
 
+            {/* Pro */}
             <div className="card" style={{ textAlign: "center", transform: "scale(1.02)", border: "2px solid #fbbf24", boxShadow: "0 20px 60px rgba(251,191,36,0.15)" }}>
               <span style={{ background: "#fbbf24", color: "#000", padding: "0.2rem 1rem", borderRadius: "20px", fontSize: "0.8rem", fontWeight: 600, textTransform: "uppercase" }}>Популярный</span>
               <h3 style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>Pro</h3>
@@ -378,20 +381,37 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Business */}
             <div className="card" style={{ textAlign: "center", border: "1px solid var(--border)" }}>
               <h3 style={{ fontSize: "1.5rem" }}>Business</h3>
-              <p style={{ fontSize: "2.5rem", fontWeight: 700 }}>1 990 ₽</p>
+              <p style={{ fontSize: "2.5rem", fontWeight: 700 }}>4 990 ₽</p>
               <p style={{ opacity: 0.7 }}>/ месяц</p>
               <ul style={{ textAlign: "left", margin: "1.5rem 0", padding: 0, listStyle: "none" }}>
                 <li>✅ Всё из Pro</li>
-                <li>✅ До 5 пользователей</li>
-                <li>✅ Приоритетная поддержка</li>
-                <li>✅ API доступ</li>
-                <li>✅ Белые этикетки (брендирование)</li>
+                <li>🛠 До 5 пользователей <span style={{ fontSize: "0.7rem", opacity: 0.5 }}>(в разработке)</span></li>
+                <li>🛠 API доступ <span style={{ fontSize: "0.7rem", opacity: 0.5 }}>(в разработке)</span></li>
+                <li>🛠 White Label (брендирование) <span style={{ fontSize: "0.7rem", opacity: 0.5 }}>(в разработке)</span></li>
+                <li>🛠 Приоритетная поддержка <span style={{ fontSize: "0.7rem", opacity: 0.5 }}>(в разработке)</span></li>
               </ul>
+              <p style={{ fontSize: "0.8rem", opacity: 0.6, marginTop: "0.5rem" }}>Все функции станут доступны в ближайшее время.</p>
               <button onClick={() => handleSubscribe("business")} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1.1rem", background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)" }}>
                 Оформить Business
               </button>
+            </div>
+
+            {/* Enterprise (скоро) */}
+            <div className="card" style={{ textAlign: "center", border: "1px dashed var(--border)", opacity: 0.7 }}>
+              <h3 style={{ fontSize: "1.5rem" }}>Enterprise</h3>
+              <p style={{ fontSize: "2rem", fontWeight: 700 }}>договорная</p>
+              <p style={{ opacity: 0.7 }}>для команд от 10 человек</p>
+              <ul style={{ textAlign: "left", margin: "1.5rem 0", padding: 0, listStyle: "none" }}>
+                <li>✅ Всё из Business</li>
+                <li>🛠 Кастомные интеграции</li>
+                <li>🛠 SLA (гарантированное время ответа)</li>
+                <li>🛠 Выделенный менеджер</li>
+              </ul>
+              <p style={{ fontSize: "0.8rem", opacity: 0.6 }}>🛠 В разработке — скоро появится!</p>
+              <button style={{ width: "100%", padding: "1rem", background: "#ccc", border: "none", borderRadius: "12px", color: "#666", fontSize: "1.1rem", cursor: "default" }}>Скоро</button>
             </div>
           </div>
           <p style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", opacity: 0.6 }}>
