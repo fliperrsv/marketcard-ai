@@ -43,17 +43,17 @@ function normalizeKeys(obj) {
   return result;
 }
 
+// Преобразует любой элемент массива в строку (если объект, ищет поля text, name, value, иначе JSON.stringify)
 function ensureStringArray(arr, defaultValues = []) {
   if (!Array.isArray(arr) || arr.length === 0) return defaultValues;
   return arr.map(item => {
     if (typeof item === 'string' && item.trim()) return item.trim();
     if (typeof item === 'object' && item !== null) {
-      // Извлекаем текст из поля text, name, или берём первый попавшийся строковый ключ
-      const text = item.text || item.name || item.value || item.label || item.content || item.advantage || item.feature || item.keyword;
-      if (text && typeof text === 'string' && text.trim()) return text.trim();
-      // Если нет, пытаемся превратить объект в строку без фигурных скобок
-      const fallback = Object.values(item).find(v => typeof v === 'string' && v.trim());
-      return fallback ? fallback.trim() : JSON.stringify(item);
+      // Пытаемся извлечь текстовое поле
+      const text = item.text || item.name || item.value || item.текст || item.название;
+      if (text && typeof text === 'string') return text.trim();
+      // Если есть поле "text" внутри вложенного объекта, обрабатываем рекурсивно
+      return JSON.stringify(item);
     }
     return String(item);
   }).filter(Boolean);
@@ -61,18 +61,29 @@ function ensureStringArray(arr, defaultValues = []) {
 
 function cleanAndParseJSON(content) {
   let cleaned = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-  const start = cleaned.indexOf('[');
-  const end = cleaned.lastIndexOf(']');
-  if (start === -1 || end === -1) throw new Error('Массив JSON не найден');
-  let jsonStr = cleaned.substring(start, end + 1);
+  // Ищем начало массива или объекта
+  let start = cleaned.indexOf('[');
+  let end = cleaned.lastIndexOf(']');
+  let jsonStr;
+  if (start !== -1 && end !== -1) {
+    jsonStr = cleaned.substring(start, end + 1);
+  } else {
+    // Ищем объект
+    start = cleaned.indexOf('{');
+    end = cleaned.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('JSON не найден');
+    jsonStr = cleaned.substring(start, end + 1);
+  }
   try {
     return JSON5.parse(jsonStr);
   } catch (e) {
+    // fallback
     jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
     return JSON5.parse(jsonStr);
   }
 }
 
+// Генерация осмысленного fallback на основе описания
 function generateFallback(description, brand, tone) {
   const words = description.trim().split(' ').slice(0, 6).join(' ');
   const brandName = brand || 'Товар';
@@ -115,11 +126,11 @@ ${context}
 Требования к КАЖДОМУ варианту:
 1. Заголовок (50-70 символов) — уникальное торговое предложение + 2-3 ключевых слова. Должен быть на русском языке.
 2. Описание (до 500 символов) — минимум 3 цифры/факта, выгоды, комплектация, призыв к действию. Только на русском языке.
-3. Преимущества (8-10 пунктов) — конкретные, с цифрами, сравнением с конкурентами, решением болей. Только на русском языке.
-4. Характеристики (12-14 пунктов) — размеры, вес, материалы, интерфейсы, напряжение, мощность и т.п. Только на русском языке.
-5. Ключевые слова (14-16 фраз) — синонимы, LSI, длинный хвост, гео-запросы, запросы с "купить", "цена". Только на русском языке.
+3. Преимущества (8-10 пунктов) — массив строк, каждая строка — конкретное преимущество с цифрами или сравнением. Никаких вложенных объектов!
+4. Характеристики (12-14 пунктов) — массив строк, каждая строка — характеристика с единицами измерения.
+5. Ключевые слова (14-16 фраз) — массив строк, синонимы, длинный хвост, гео-запросы.
 
-ВАЖНО: Весь ответ должен быть на русском языке! Никаких английских слов, кроме брендов, если они указаны в описании.
+ВАЖНО: Все массивы должны быть плоскими (простыми списками строк). Не используй объекты внутри массивов.
 
 Верни ТОЛЬКО JSON-массив из ${count} объектов. Используй английские названия ключей: title, description, advantages, features, keywords. Не добавляй ничего кроме JSON.
 `;
@@ -130,7 +141,7 @@ ${context}
       data: {
         model: 'GigaChat',
         messages: [
-          { role: 'system', content: 'Ты — помощник, который возвращает только JSON-массив без пояснений. Все ответы должны быть на русском языке. Используй английские ключи: title, description, advantages, features, keywords.' },
+          { role: 'system', content: 'Ты — помощник, который возвращает только JSON-массив без пояснений. Все ответы должны быть на русском языке. Используй английские ключи: title, description, advantages, features, keywords. Массивы должны быть плоскими (только строки).' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.6,
@@ -156,8 +167,13 @@ ${context}
       result = [fallbackCard];
     }
 
-    const normalized = Array.isArray(result) ? result : [result];
-    const filledResult = normalized.slice(0, count).map(card => {
+    // Если пришёл объект, а не массив, преобразуем в массив
+    if (!Array.isArray(result)) {
+      result = [result];
+    }
+
+    // Приводим все объекты к правильным ключам и преобразуем массивы в строки
+    const filledResult = result.slice(0, count).map(card => {
       const norm = normalizeKeys(card);
       return {
         title: norm.title?.trim() || `${brand || 'Товар'} — надёжный выбор`,
