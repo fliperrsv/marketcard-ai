@@ -43,16 +43,13 @@ function normalizeKeys(obj) {
   return result;
 }
 
-// Преобразует любой элемент массива в строку (если объект, ищет поля text, name, value, иначе JSON.stringify)
 function ensureStringArray(arr, defaultValues = []) {
   if (!Array.isArray(arr) || arr.length === 0) return defaultValues;
   return arr.map(item => {
     if (typeof item === 'string' && item.trim()) return item.trim();
     if (typeof item === 'object' && item !== null) {
-      // Пытаемся извлечь текстовое поле
       const text = item.text || item.name || item.value || item.текст || item.название;
       if (text && typeof text === 'string') return text.trim();
-      // Если есть поле "text" внутри вложенного объекта, обрабатываем рекурсивно
       return JSON.stringify(item);
     }
     return String(item);
@@ -68,22 +65,31 @@ function cleanAndParseJSON(content) {
   if (start !== -1 && end !== -1) {
     jsonStr = cleaned.substring(start, end + 1);
   } else {
-    // Ищем объект
     start = cleaned.indexOf('{');
     end = cleaned.lastIndexOf('}');
     if (start === -1 || end === -1) throw new Error('JSON не найден');
     jsonStr = cleaned.substring(start, end + 1);
   }
+  // Восстанавливаем обрезанный JSON
+  let trimmed = jsonStr.trim();
+  if (trimmed.endsWith(',')) {
+    trimmed = trimmed.slice(0, -1);
+  }
+  // Если заканчивается на '{' или '[', закрываем
+  if (trimmed.endsWith('{')) {
+    trimmed += '}';
+  } else if (trimmed.endsWith('[')) {
+    trimmed += ']';
+  }
   try {
-    return JSON5.parse(jsonStr);
+    return JSON5.parse(trimmed);
   } catch (e) {
-    // fallback
-    jsonStr = jsonStr.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
-    return JSON5.parse(jsonStr);
+    // удаляем лишние запятые
+    trimmed = trimmed.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+    return JSON5.parse(trimmed);
   }
 }
 
-// Генерация осмысленного fallback на основе описания
 function generateFallback(description, brand, tone) {
   const words = description.trim().split(' ').slice(0, 6).join(' ');
   const brandName = brand || 'Товар';
@@ -126,11 +132,9 @@ ${context}
 Требования к КАЖДОМУ варианту:
 1. Заголовок (50-70 символов) — уникальное торговое предложение + 2-3 ключевых слова. Должен быть на русском языке.
 2. Описание (до 500 символов) — минимум 3 цифры/факта, выгоды, комплектация, призыв к действию. Только на русском языке.
-3. Преимущества (8-10 пунктов) — массив строк, каждая строка — конкретное преимущество с цифрами или сравнением. Никаких вложенных объектов!
-4. Характеристики (12-14 пунктов) — массив строк, каждая строка — характеристика с единицами измерения.
-5. Ключевые слова (14-16 фраз) — массив строк, синонимы, длинный хвост, гео-запросы.
-
-ВАЖНО: Все массивы должны быть плоскими (простыми списками строк). Не используй объекты внутри массивов.
+3. Преимущества (8-10 пунктов) — **массив строк**, каждая строка — конкретное преимущество с цифрами или сравнением. **Запрещено использовать объекты!** Пример: ["Преимущество 1", "Преимущество 2"].
+4. Характеристики (12-14 пунктов) — **массив строк**, каждая строка — характеристика с единицами измерения.
+5. Ключевые слова (14-16 фраз) — **массив строк**, синонимы, длинный хвост, гео-запросы.
 
 Верни ТОЛЬКО JSON-массив из ${count} объектов. Используй английские названия ключей: title, description, advantages, features, keywords. Не добавляй ничего кроме JSON.
 `;
@@ -141,11 +145,11 @@ ${context}
       data: {
         model: 'GigaChat',
         messages: [
-          { role: 'system', content: 'Ты — помощник, который возвращает только JSON-массив без пояснений. Все ответы должны быть на русском языке. Используй английские ключи: title, description, advantages, features, keywords. Массивы должны быть плоскими (только строки).' },
+          { role: 'system', content: 'Ты — помощник, который возвращает только JSON-массив без пояснений. Все ответы должны быть на русском языке. Используй английские ключи: title, description, advantages, features, keywords. Все массивы должны содержать только строки (простые текстовые значения), без вложенных объектов.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.6,
-        max_tokens: 3000
+        max_tokens: 4500
       },
       headers: {
         'Content-Type': 'application/json',
@@ -167,12 +171,10 @@ ${context}
       result = [fallbackCard];
     }
 
-    // Если пришёл объект, а не массив, преобразуем в массив
     if (!Array.isArray(result)) {
       result = [result];
     }
 
-    // Приводим все объекты к правильным ключам и преобразуем массивы в строки
     const filledResult = result.slice(0, count).map(card => {
       const norm = normalizeKeys(card);
       return {
