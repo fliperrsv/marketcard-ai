@@ -224,7 +224,6 @@ export default function Home() {
 
   return (
     <main style={{ maxWidth: 1200, margin: "0 auto", padding: "2rem 1.5rem", background: "var(--bg)", color: "var(--text)", minHeight: "100vh" }}>
-      {/* Hero-секция */}
       <div style={{ textAlign: "center", padding: "3rem 0 2rem" }}>
         <h1 className="gradient-text" style={{ fontSize: "3.5rem", fontWeight: 800, letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>
           MarketCard AI
@@ -240,7 +239,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Вкладки */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "2rem", borderBottom: "2px solid var(--border)", paddingBottom: "0.5rem" }}>
         <button onClick={() => setTab("generator")} style={{ padding: "0.8rem 1.5rem", border: "none", background: tab === "generator" ? "var(--primary)" : "transparent", color: tab === "generator" ? "#fff" : "var(--text)", borderRadius: "12px 12px 0 0", cursor: "pointer", fontWeight: 500, transition: "background 0.2s" }}>
           ✨ Генератор
@@ -277,7 +275,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Как это работает */}
           <div style={{ marginTop: "3rem" }}>
             <h2 style={{ textAlign: "center", fontSize: "2rem", marginBottom: "2rem" }}>Как это работает</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "2rem" }}>
@@ -299,7 +296,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Что вы получаете */}
           <div style={{ marginTop: "3rem" }}>
             <h2 style={{ textAlign: "center", fontSize: "2rem", marginBottom: "2rem" }}>Что вы получаете</h2>
             <div className="card" style={{ maxWidth: "600px", margin: "0 auto" }}>
@@ -313,7 +309,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* FAQ */}
           <div style={{ marginTop: "3rem" }}>
             <h2 style={{ textAlign: "center", fontSize: "2rem", marginBottom: "2rem" }}>❓ Часто задаваемые вопросы</h2>
             <div style={{ maxWidth: "700px", margin: "0 auto" }}>
@@ -378,7 +373,9 @@ export default function Home() {
                 <li>✅ История генераций</li>
                 <li>✅ Экспорт PDF/CSV</li>
               </ul>
-              <iframe title="lava.top" style={{ border: "none", width: "350px", height: "60px" }} src="https://widget.lava.top/15b7c604-d062-437a-8c4b-5dbf049bd2a7"></iframe>
+              <button onClick={() => handleSubscribe("pro")} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1.1rem" }}>
+                Оформить Pro
+              </button>
             </div>
 
             <div className="card" style={{ textAlign: "center", border: "1px solid var(--border)" }}>
@@ -392,7 +389,9 @@ export default function Home() {
                 <li>✅ API доступ</li>
                 <li>✅ Белые этикетки (брендирование)</li>
               </ul>
-              <iframe title="lava.top" style={{ border: "none", width: "350px", height: "60px" }} src="https://widget.lava.top/ID_ДЛЯ_BUSINESS"></iframe>
+              <button onClick={() => handleSubscribe("business")} className="btn-primary" style={{ width: "100%", padding: "1rem", fontSize: "1.1rem", background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)" }}>
+                Оформить Business
+              </button>
             </div>
           </div>
           <p style={{ textAlign: "center", marginTop: "2rem", fontSize: "0.9rem", opacity: 0.6 }}>
@@ -401,7 +400,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Результаты генерации */}
       {results.length > 0 && (
         <div className="card fade-in" style={{ marginTop: "2rem" }}>
           <h2>✅ Сгенерировано {isSubscribed ? "3 варианта" : "1 вариант"}</h2>
